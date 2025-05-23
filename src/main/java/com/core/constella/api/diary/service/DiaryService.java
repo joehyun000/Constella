@@ -2,9 +2,9 @@ package com.core.constella.api.diary.service;
 
 import com.core.constella.api.diary.dto.DiaryCreateRequest;
 import com.core.constella.api.diary.dto.DiaryMergedResponse;
-import com.core.constella.api.diary.entity.Diary;
-import com.core.constella.api.diary.entity.DiaryEntry;
-import com.core.constella.api.diary.entity.DiaryImage;
+import com.core.constella.api.diary.domain.Diary;
+import com.core.constella.api.diary.domain.DiaryEntry;
+import com.core.constella.api.diary.domain.DiaryImage;
 import com.core.constella.api.diary.repository.DiaryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

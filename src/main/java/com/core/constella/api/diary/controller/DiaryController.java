@@ -2,6 +2,7 @@ package com.core.constella.api.diary.controller;
 
 import com.core.constella.api.diary.dto.DiaryCreateRequest;
 import com.core.constella.api.diary.service.DiaryService;
+import jakarta.validation.constraints.Null;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -27,6 +28,7 @@ public class DiaryController {
     }
     @GetMapping("/merge/{locationCode}")
     public ResponseEntity<String> mergeDiary(@PathVariable String locationCode) {
-        return ResponseEntity.ok(diaryService.Merged);
+        //return ResponseEntity.ok(diaryService.Merged);
+        return null;
     }
 }

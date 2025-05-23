@@ -1,4 +1,4 @@
-package com.core.constella.api.diary.entity;
+package com.core.constella.api.diary.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
