@@ -1,10 +1,9 @@
-package com.core.constella.api.diary.entity;
+package com.core.constella.api.diary.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
