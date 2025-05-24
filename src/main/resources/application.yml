@@ -20,6 +20,9 @@ spring:
         dialect: org.hibernate.dialect.MySQL8Dialect
         format_sql: true
 
+file:
+  upload-dir: src/main/resources/static/images/
+
 logging:
   level:
     org.hibernate.SQL: debug

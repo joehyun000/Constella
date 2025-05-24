@@ -28,4 +28,8 @@ public class User {
                 .password(passwordHash)
                 .build();
     }
+
+    public void updateUsername(String username) {
+        this.username = username;
+    }
 }

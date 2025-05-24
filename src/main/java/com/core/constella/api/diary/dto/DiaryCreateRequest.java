@@ -16,5 +16,5 @@ public class DiaryCreateRequest {
     private String title;
     private String date; //"2025-05-19 형식"
     private List<String> contents;
-    private List<MultipartFile> images;
+    private List<String> imageUrls;
 }

@@ -5,6 +5,7 @@ import com.core.constella.api.user.dto.LoginResponse;
 import com.core.constella.api.user.dto.RegisterRequest;
 import com.core.constella.api.user.dto.RegisterResponse;
 import com.core.constella.api.user.service.UserService;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,8 +28,11 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request, HttpSession session) {
         LoginResponse response = userService.login(request);
+
+        // 세션에 로그인한 사용자 ID 저장!
+        session.setAttribute("loginUserId", response.getId());
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
