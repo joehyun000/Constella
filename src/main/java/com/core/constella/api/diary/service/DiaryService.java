@@ -24,6 +24,7 @@ public class DiaryService {
     private final DiaryRepository diaryRepository;
     private final DiaryEntryRepository diaryEntryRepository;
 
+    // entity 일기 생성
     @Transactional
     public void createEntry(DiaryCreateRequest request) throws IOException {
         Diary diary = diaryRepository.findByLocationCode(request.getLocationCode())
@@ -59,6 +60,7 @@ public class DiaryService {
         diaryEntryRepository.save(entry); // Entry 저장 (명확성 위해 추가)
     }
 
+    // entity 일기 조회
     @Transactional(readOnly = true)
     public DiaryEntryResponse getEntryById(Long entryId) {
         DiaryEntry entry = diaryEntryRepository.findById(entryId)
@@ -77,6 +79,7 @@ public class DiaryService {
                 .build();
     }
 
+    // 일기 병합하기
     @Transactional(readOnly = true)
     public DiaryMergedResponse mergedEntries(String locationCode) {
         Diary diary = diaryRepository.findByLocationCode(locationCode)

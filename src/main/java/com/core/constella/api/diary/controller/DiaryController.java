@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 public class DiaryController {
     private final DiaryService diaryService;
 
+    // entity 일기 생성
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> createDiary(@RequestBody DiaryCreateRequest request) {
         try {
@@ -36,6 +37,7 @@ public class DiaryController {
         return ResponseEntity.ok(response);
     }
 
+    // 일기 합치기
     @GetMapping("/merge/{locationCode}")
     public ResponseEntity<String> mergeDiary(@PathVariable String locationCode) {
         DiaryMergedResponse response = diaryService.mergedEntries(locationCode);

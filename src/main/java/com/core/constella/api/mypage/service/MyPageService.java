@@ -15,6 +15,7 @@ public class MyPageService {
 
     private final UserRepository userRepository;
 
+    //로그인 확인용(session) 받아오기용
     private Long getLoginUserId(HttpSession session) {
         Object id = session.getAttribute("loginUserId");
         if (id == null) {
@@ -23,6 +24,7 @@ public class MyPageService {
         return (Long) id;
     }
 
+    //마이페이지 조회
     @Transactional(readOnly = true)
     public MyPageResponse getMyPageInfo(HttpSession session) {
         Long userId = getLoginUserId(session);
@@ -31,6 +33,7 @@ public class MyPageService {
         return MyPageResponse.from(user);
     }
 
+    //마이페이지 수정
     @Transactional
     public MyPageResponse updateMyPageInfo(MyPageUpdateRequest request, HttpSession session) {
         Long userId = getLoginUserId(session);

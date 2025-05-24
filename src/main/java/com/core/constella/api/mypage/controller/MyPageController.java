@@ -14,11 +14,13 @@ public class MyPageController {
 
     private final MyPageService myPageService;
 
+    //마이페이지 조회
     @GetMapping
     public MyPageResponse getMyPageInfo(HttpSession session) {
         return myPageService.getMyPageInfo(session);
     }
 
+    //마이페이지 수정
     @PatchMapping
     public MyPageResponse updateMyPageInfo(@RequestBody MyPageUpdateRequest request, HttpSession session) {
         return myPageService.updateMyPageInfo(request, session);
