@@ -1,8 +1,10 @@
 package com.core.constella.api.diary.dto;
 
 import lombok.*;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Getter
@@ -14,7 +16,9 @@ import java.util.List;
 public class DiaryCreateRequest {
     private String locationCode;
     private String title;
-    private String date; //"2025-05-19 형식"
+
+    @DateTimeFormat(pattern = "yyyy-MM-dd")
+    private LocalDate date;
     private List<String> contents;
     private List<MultipartFile> images;
 }

@@ -23,6 +23,7 @@ public class DiaryEntry {
 
     //하나의 값이 여러개의 문자열을 가질 수 있도록 이렇게 설정함
     @ElementCollection
+    @Builder.Default
     private List<String> contents = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -30,5 +31,6 @@ public class DiaryEntry {
     private Diary diary;
 
     @OneToMany(mappedBy = "entry", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<DiaryImage> images = new ArrayList<>();
 }

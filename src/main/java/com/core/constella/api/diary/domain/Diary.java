@@ -22,6 +22,6 @@ public class Diary {
     private String locationCode;
 
     @OneToMany(mappedBy = "diary", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<DiaryEntry> entries = new ArrayList<>();
-
 }

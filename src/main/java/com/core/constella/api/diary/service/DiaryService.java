@@ -29,14 +29,16 @@ public class DiaryService {
     private static final String UPLOAD_DIR = "C:/Users/sjun/study/constella/src/main/resources/static/images/";
 
     @Transactional
-    public void cretaeEntry(DiaryCreateRequest request) throws IOException {
+    public void createEntry(DiaryCreateRequest request) throws IOException {
         Diary diary = diaryRepository.findByLocationCode(request.getLocationCode())
                 .orElse(Diary.builder().locationCode(request.getLocationCode()).build());
+
+        diary = diaryRepository.save(diary); // 🔥 새로 만든 경우에는 꼭 save 해서 ID 보장
+
         DiaryEntry entry = DiaryEntry.builder()
                 .title(request.getTitle())
                 .contents(request.getContents())
-                .date(LocalDate.parse(request.getDate()))
-                //자바의 날짜 타입으로 바꿔줌
+                .date(request.getDate())
                 .diary(diary)
                 .build();
 
@@ -55,38 +57,46 @@ public class DiaryService {
                 }
             }
         }
+
+        diary.getEntries().add(entry);
+        diaryRepository.save(diary); // ✅ cascade 설정 전제
     }
 
-    public DiaryMergedResponse mergedEntries(String locationCode) {
-        // locationCode에 해당하는 다이어리를 조회
-        Diary diary = diaryRepository.findByLocationCode(locationCode)
-                .orElseThrow(() -> new RuntimeException("일기가 없습니다."));
 
-        StringBuilder contentBuilder = new StringBuilder();
-        List<String> images = new ArrayList<>();
+    public List<DiaryMergedResponse> getMergedEntries(String locationCode) {
+        Diary diary = diaryRepository.findByLocationCode(locationCode).orElse(null);
 
-        //하나의 Diary 객체에는 여러개의 DiaryEntry가 있음
-        // 각각의 일기를 순회하면서 병합작업을 진행
-        // [[2025-05-20] 나의 첫 번째 일기] 이런식으로 만들어짐
+        if (diary == null) {
+            return new ArrayList<>(); // ✅ 예외 대신 빈 리스트 반환
+        }
+
+        List<DiaryMergedResponse> responseList = new ArrayList<>();
+
         for (DiaryEntry entry : diary.getEntries()) {
-            contentBuilder.append("[" + entry.getDate() + "] ").append(entry.getTitle()).append("\n");
+            StringBuilder contentBuilder = new StringBuilder();
             for (String c : entry.getContents()) {
                 contentBuilder.append(c).append("\n");
             }
-            contentBuilder.append("\n");
+
+            List<String> images = new ArrayList<>();
             for (DiaryImage img : entry.getImages()) {
                 images.add(img.getImageUrl());
             }
+
+            DiaryMergedResponse response = DiaryMergedResponse.builder()
+                    .id(entry.getId())
+                    .locationCode(locationCode)
+                    .mergedTitle(entry.getTitle())
+                    .mergedContent(contentBuilder.toString())
+                    .imageUrls(images)
+                    .build();
+
+            responseList.add(response);
         }
 
-        // 병합 결과를 DiaryMergedResponse 객체로 만들어 변환
-        return DiaryMergedResponse.builder()
-                .locationCode(locationCode)
-                .mergedTitle("병합된 일기")
-                .mergedContent(contentBuilder.toString())
-                .imageUrls(images)
-                .build();
+        return responseList;
     }
+
 
 
 }
