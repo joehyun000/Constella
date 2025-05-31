@@ -2,6 +2,7 @@ package com.core.constella.api.diary.dto;
 
 import lombok.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Getter
@@ -16,4 +17,5 @@ public class DiaryMergedResponse {
     private String mergedTitle;
     private String mergedContent;
     private List<String> imageUrls;
+    private LocalDate date;
 }
