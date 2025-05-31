@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,7 +27,10 @@ public class DiaryService {
     private final DiaryRepository diaryRepository;
 
     //로컬에서 할거라 이렇게해서 이미지 가져올 예정
-    private static final String UPLOAD_DIR = "C:/Users/sjun/study/constella/src/main/resources/static/images/";
+    private static final String UPLOAD_DIR = Paths.get(System.getProperty("user.dir"), "uploads", "images").toString();
+
+
+
 
     @Transactional
     public void createEntry(DiaryCreateRequest request) throws IOException {
@@ -45,8 +49,11 @@ public class DiaryService {
         if (request.getImages() != null) {
             for (MultipartFile file : request.getImages()) {
                 if (!file.isEmpty()) {
-                    String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-                    Path imagePath = Paths.get(UPLOAD_DIR + fileName);
+                    String originalFileName = file.getOriginalFilename();
+                    String extension = originalFileName.substring(originalFileName.lastIndexOf("."));
+                    String fileName = UUID.randomUUID() + extension;
+
+                    Path imagePath = Paths.get(UPLOAD_DIR, fileName);
                     Files.createDirectories(imagePath.getParent());
                     Files.write(imagePath, file.getBytes());
 
@@ -89,6 +96,7 @@ public class DiaryService {
                     .mergedTitle(entry.getTitle())
                     .mergedContent(contentBuilder.toString())
                     .imageUrls(images)
+                    .date(entry.getDate())
                     .build();
 
             responseList.add(response);

@@ -20,6 +20,16 @@ spring:
         dialect: org.hibernate.dialect.MySQL8Dialect
         format_sql: true
 
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 30MB
+
+  spring:
+    web:
+      resources:
+        static-locations: file:uploads/
+
 logging:
   level:
     org.hibernate.SQL: debug
