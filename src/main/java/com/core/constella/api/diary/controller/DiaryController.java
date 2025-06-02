@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/diaries")
@@ -42,4 +43,15 @@ public class DiaryController {
         return ResponseEntity.ok(diaries);
     }
 
+    // 통계 요약 정보
+    @GetMapping("/stats/summary")
+    public ResponseEntity<Map<String, Object>> getDiarySummary() {
+        return ResponseEntity.ok(diaryService.getDiarySummary());
+    }
+
+    // 국가별 일기 통계
+    @GetMapping("/stats/by-country")
+    public ResponseEntity<List<Map<String, Object>>> getDiaryStatsByCountry() {
+        return ResponseEntity.ok(diaryService.getDiaryStatsByCountry());
+    }
 }

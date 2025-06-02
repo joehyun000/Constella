@@ -17,9 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -103,6 +101,45 @@ public class DiaryService {
         }
 
         return responseList;
+    }
+
+    public Map<String, Object> getDiarySummary() {
+        List<Diary> all = diaryRepository.findAll();
+
+        int totalDiaries = 0;
+        Map<String, Integer> countryCount = new HashMap<>();
+
+        for (Diary diary : all) {
+            int entries = diary.getEntries().size();
+            totalDiaries += entries;
+            countryCount.put(diary.getLocationCode(), entries);
+        }
+
+        String mostVisited = countryCount.entrySet().stream()
+                .max(Map.Entry.comparingByValue())
+                .map(Map.Entry::getKey)
+                .orElse("없음");
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("totalDiaries", totalDiaries);
+        result.put("totalCountries", countryCount.size());
+        result.put("mostVisitedCountry", mostVisited);
+
+        return result;
+    }
+
+    public List<Map<String, Object>> getDiaryStatsByCountry() {
+        List<Diary> all = diaryRepository.findAll();
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Diary diary : all) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("countryName", diary.getLocationCode()); // 또는 한글 매핑
+            map.put("count", diary.getEntries().size());
+            result.add(map);
+        }
+
+        return result;
     }
 
 
