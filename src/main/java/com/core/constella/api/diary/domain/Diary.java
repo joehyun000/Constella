@@ -21,6 +21,14 @@ public class Diary {
     //장소 고유 식별자
     private String locationCode;
 
+    // 위도
+    @Column(nullable = true)
+    private Double latitude;
+
+    // 경도
+    @Column(nullable = true)
+    private Double longitude;
+
     @OneToMany(mappedBy = "diary", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<DiaryEntry> entries = new ArrayList<>();
