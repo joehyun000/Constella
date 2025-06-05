@@ -1,5 +1,6 @@
 package com.core.constella.api.diary.controller;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
@@ -27,14 +28,23 @@ public class DiaryController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<String> createDiary(@ModelAttribute DiaryCreateRequest request) {
         try {
+            System.out.println("Received diary creation request");
             diaryService.createEntry(request);
             return ResponseEntity.status(HttpStatus.CREATED).body("일기 작성 완료");
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e) {
+            System.err.println("Validation error: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("입력값 오류: " + e.getMessage());
+        } catch (IOException e) {
+            System.err.println("File processing error: " + e.getMessage());
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("작성 실패 : " + e.getMessage());
-
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("파일 처리 중 오류 발생: " + e.getMessage());
+        } catch (Exception e) {
+            System.err.println("Unexpected error: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("작성 실패: " + e.getMessage());
         }
-
     }
 //    @GetMapping("/merge/{locationCode}")
 //    public ResponseEntity<String> mergeDiary(@PathVariable String locationCode) {

@@ -21,4 +21,10 @@ public class DiaryCreateRequest {
     private LocalDate date;
     private List<String> contents;
     private List<MultipartFile> images;
+
+    // 위도
+    private Double latitude;
+
+    // 경도
+    private Double longitude;
 }

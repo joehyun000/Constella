@@ -23,9 +23,9 @@ public class StatsController {
     public Map<String, Object> getSummary() {
         DiaryService.StatsSummary summary = diaryService.getStatsSummary();
         Map<String, Object> result = new HashMap<>();
-        result.put("totalDiaries", summary.totalDiaries);
-        result.put("totalCountries", summary.totalCountries);
-        result.put("mostVisitedCountry", summary.mostVisitedCountry);
+        result.put("totalDiaries", summary.getTotalDiaries());
+        result.put("totalCountries", summary.getTotalCountries());
+        result.put("mostVisitedCountry", summary.getMostVisitedCountry());
         return result;
     }
 
@@ -35,8 +35,8 @@ public class StatsController {
         List<Map<String, Object>> result = new ArrayList<>();
         for (DiaryService.StatsByCountry s : stats) {
             Map<String, Object> map = new HashMap<>();
-            map.put("countryName", s.countryName);
-            map.put("count", s.count);
+            map.put("countryName", s.getCountryName());
+            map.put("count", s.getCount());
             result.add(map);
         }
         return result;
