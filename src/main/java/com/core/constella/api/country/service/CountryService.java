@@ -24,6 +24,7 @@ public class CountryService {
 
     private static Map<String, CountryInfo> COUNTRY_INFO_MAP;
     private static Map<String, String> COUNTRY_NAME_MAP_EN_TO_KO;
+    private static Map<String, String> COUNTRY_CODE_TO_KO;
 
     public static class CountryInfo {
         public String nameEn;
@@ -42,20 +43,25 @@ public class CountryService {
             org.json.JSONObject obj = new org.json.JSONObject(json);
             Map<String, CountryInfo> infoMap = new HashMap<>();
             Map<String, String> enToKo = new HashMap<>();
+            Map<String, String> codeToKo = new HashMap<>();
             for (String nameKo : obj.keySet()) {
                 org.json.JSONObject v = obj.getJSONObject(nameKo);
                 String nameEn = v.getString("nameEn");
                 double lat = v.getDouble("lat");
                 double lng = v.getDouble("lng");
+                String code = v.has("code") ? v.getString("code") : null;
                 infoMap.put(nameKo, new CountryInfo(nameEn, lat, lng));
                 enToKo.put(nameEn, nameKo);
+                if (code != null) codeToKo.put(code, nameKo);
             }
             COUNTRY_INFO_MAP = infoMap;
             COUNTRY_NAME_MAP_EN_TO_KO = enToKo;
+            COUNTRY_CODE_TO_KO = codeToKo;
             System.out.println("COUNTRY_INFO_MAP keys: " + COUNTRY_INFO_MAP.keySet());
         } catch (Exception e) {
             COUNTRY_INFO_MAP = Map.of();
             COUNTRY_NAME_MAP_EN_TO_KO = Map.of();
+            COUNTRY_CODE_TO_KO = Map.of();
             e.printStackTrace();
         }
     }
@@ -98,5 +104,9 @@ public class CountryService {
 
     public static Map<String, String> getCountryNameMapKoByEn() {
         return COUNTRY_NAME_MAP_EN_TO_KO;
+    }
+
+    public static Map<String, String> getCountryNameKoByCode() {
+        return COUNTRY_CODE_TO_KO;
     }
 } 
