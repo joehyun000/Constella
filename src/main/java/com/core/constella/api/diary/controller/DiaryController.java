@@ -1,15 +1,22 @@
 package com.core.constella.api.diary.controller;
 
-import com.core.constella.api.diary.dto.DiaryCreateRequest;
-import com.core.constella.api.diary.dto.DiaryMergedResponse;
-import com.core.constella.api.diary.service.DiaryService;
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
+import com.core.constella.api.diary.dto.DiaryCreateRequest;
+import com.core.constella.api.diary.dto.DiaryMergedResponse;
+import com.core.constella.api.diary.service.DiaryService;
+
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/diaries")
@@ -40,6 +47,12 @@ public class DiaryController {
     public ResponseEntity<List<DiaryMergedResponse>> getDiariesByCountry(@PathVariable String locationCode) {
         List<DiaryMergedResponse> diaries = diaryService.getMergedEntries(locationCode);
         return ResponseEntity.ok(diaries);
+    }
+
+    // 모든 locationCode의 모든 카드(일기) 리스트를 반환하는 엔드포인트 추가
+    @GetMapping("/all")
+    public ResponseEntity<List<DiaryMergedResponse>> getAllDiaries() {
+        return ResponseEntity.ok(diaryService.getAllMergedEntries());
     }
 
 }

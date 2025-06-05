@@ -47,6 +47,7 @@ dependencies {
 	//spring security 의존성 추가
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 
+	implementation 'org.json:json:20240303'
 
 }
 

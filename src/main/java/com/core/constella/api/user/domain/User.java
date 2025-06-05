@@ -22,6 +22,9 @@ public class User {
     @Column(nullable = false, length = 255)
     private String password; // 해시된 비밀번호
 
+    @Column(length = 30)
+    private String constellation; // 별자리 정보
+
     public static User create(String username, String passwordHash) {
         return User.builder()
                 .username(username)
