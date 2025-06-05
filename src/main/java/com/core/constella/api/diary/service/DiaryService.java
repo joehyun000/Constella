@@ -30,8 +30,8 @@ public class DiaryService {
     private final DiaryRepository diaryRepository;
     private final CountryService countryService;
 
-    //로컬에서 할거라 이렇게해서 이미지 가져올 예정
-    private static final String UPLOAD_DIR = "C:/Users/sjun/study/constella/src/main/resources/static/images/";
+    // 이미지 저장 경로를 build/resources/main/static/images/로 변경
+    private static final String UPLOAD_DIR = "build/resources/main/static/images/";
 
     @Transactional
     public void createEntry(DiaryCreateRequest request) throws IOException {
@@ -94,6 +94,7 @@ public class DiaryService {
                     .mergedTitle(entry.getTitle())
                     .mergedContent(contentBuilder.toString())
                     .imageUrls(images)
+                    .date(entry.getDate())
                     .build();
 
             responseList.add(response);
@@ -127,6 +128,7 @@ public class DiaryService {
                         .mergedTitle(entry.getTitle())
                         .mergedContent(contentBuilder.toString())
                         .imageUrls(images)
+                        .date(entry.getDate())
                         .build();
 
                 responseList.add(response);
@@ -164,11 +166,11 @@ public class DiaryService {
     public List<StatsByCountry> getStatsByCountry() {
         List<Object[]> countryCounts = diaryRepository.countEntriesByCountryGroup();
         List<StatsByCountry> stats = new ArrayList<>();
-        Map<String, String> enToKo = CountryService.getCountryNameMapKoByEn();
+        Map<String, String> codeToKo = CountryService.getCountryNameKoByCode();
         for (Object[] row : countryCounts) {
-            String locationCode = (String) row[0];
-            long count = (Long) row[1];
-            String nameKo = enToKo.getOrDefault(locationCode, locationCode);
+            String code = (String) row[0];
+            long count = ((Number) row[1]).longValue();
+            String nameKo = codeToKo.getOrDefault(code, code);
             stats.add(new StatsByCountry(nameKo, count));
         }
         return stats;
