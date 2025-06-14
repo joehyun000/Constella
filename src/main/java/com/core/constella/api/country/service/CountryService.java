@@ -22,7 +22,7 @@ import lombok.RequiredArgsConstructor;
 public class CountryService {
     private final CountryRepository countryRepository;
 
-    private static Map<String, CountryInfo> COUNTRY_INFO_MAP;
+    public static Map<String, CountryInfo> COUNTRY_INFO_MAP;
     private static Map<String, String> COUNTRY_NAME_MAP_EN_TO_KO;
     private static Map<String, String> COUNTRY_CODE_TO_KO;
 
@@ -30,10 +30,12 @@ public class CountryService {
         public String nameEn;
         public double lat;
         public double lng;
-        public CountryInfo(String nameEn, double lat, double lng) {
+        public String code;
+        public CountryInfo(String nameEn, double lat, double lng, String code) {
             this.nameEn = nameEn;
             this.lat = lat;
             this.lng = lng;
+            this.code = code;
         }
     }
 
@@ -50,7 +52,7 @@ public class CountryService {
                 double lat = v.getDouble("lat");
                 double lng = v.getDouble("lng");
                 String code = v.has("code") ? v.getString("code") : null;
-                infoMap.put(nameKo, new CountryInfo(nameEn, lat, lng));
+                infoMap.put(nameKo, new CountryInfo(nameEn, lat, lng, code));
                 enToKo.put(nameEn, nameKo);
                 if (code != null) codeToKo.put(code, nameKo);
             }

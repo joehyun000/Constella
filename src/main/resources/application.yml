@@ -27,5 +27,8 @@ spring:
 
 logging:
   level:
+    com.core.constella: INFO
+    org.springframework.web: INFO
+    org.hibernate: INFO
     org.hibernate.SQL: debug
     org.hibernate.type: trace

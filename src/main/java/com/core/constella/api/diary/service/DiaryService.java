@@ -5,14 +5,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
-import java.util.Collections;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -24,16 +26,20 @@ import com.core.constella.api.diary.domain.DiaryImage;
 import com.core.constella.api.diary.dto.DiaryCreateRequest;
 import com.core.constella.api.diary.dto.DiaryMergedResponse;
 import com.core.constella.api.diary.repository.DiaryRepository;
+import com.core.constella.api.user.domain.User;
+import com.core.constella.api.user.service.UserService;
 
-import lombok.RequiredArgsConstructor;
-import lombok.Getter;
 import lombok.Builder;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
 public class DiaryService {
     private final DiaryRepository diaryRepository;
     private final CountryService countryService;
+    private final UserService userService;
+    private static final Logger log = LoggerFactory.getLogger(DiaryService.class);
 
     // 이미지 저장 경로를 외부 디렉토리로 설정
     @Value("${app.upload.dir:./uploads}") // application.properties에서 설정 가능, 기본값은 현재 디렉토리의 uploads 폴더
@@ -48,12 +54,65 @@ public class DiaryService {
             System.out.println("Date: " + request.getDate());
             System.out.println("Number of images: " + (request.getImages() != null ? request.getImages().size() : 0));
 
-            Diary diary = diaryRepository.findByLocationCode(request.getLocationCode())
-                    .orElse(Diary.builder()
-                            .locationCode(request.getLocationCode())
-                            .latitude(request.getLatitude() != null ? request.getLatitude() : 0.0)
-                            .longitude(request.getLongitude() != null ? request.getLongitude() : 0.0)
-                            .build());
+            if (request.getUserId() == null) {
+                throw new IllegalArgumentException("userId는 필수입니다.");
+            }
+            User user = userService.findById(request.getUserId());
+            if (user == null) {
+                throw new IllegalArgumentException("해당 userId의 유저가 존재하지 않습니다: " + request.getUserId());
+            }
+
+            System.out.println("User found: " + user.getId() + ", " + user.getUsername());
+
+            // userId와 locationCode로 Diary 찾기 (user별로 Diary 분리)
+            Double lat = request.getLatitude();
+            Double lng = request.getLongitude();
+            if (lat == null || lat == 0.0 || lng == null || lng == 0.0) {
+                String nameKo = CountryService.getCountryNameKoByCode().get(request.getLocationCode());
+                CountryService.CountryInfo info = null;
+                if (nameKo != null) {
+                    info = CountryService.COUNTRY_INFO_MAP.get(nameKo);
+                }
+                if (info != null) {
+                    lat = info.lat;
+                    lng = info.lng;
+                }
+            }
+
+            // Find or create diary with proper user association
+            Optional<Diary> existingDiary = diaryRepository.findByUser_IdAndLocationCode(request.getUserId(), request.getLocationCode());
+            Diary diary;
+            if (existingDiary.isPresent()) {
+                diary = existingDiary.get();
+                log.info("Found existing diary for user {} and location {}", request.getUserId(), request.getLocationCode());
+            } else {
+                log.info("Creating new diary for user {} and location {}", request.getUserId(), request.getLocationCode());
+                diary = Diary.builder()
+                        .locationCode(request.getLocationCode())
+                        .latitude(lat)
+                        .longitude(lng)
+                        .user(user)
+                        .build();
+            }
+            
+            // Always ensure user is set
+            if (diary.getUser() == null || !diary.getUser().getId().equals(request.getUserId())) {
+                log.info("Setting user {} for diary", request.getUserId());
+                diary.setUser(user);
+            }
+
+            // 위도/경도 정보 강제 업데이트
+            String nameKo = CountryService.getCountryNameKoByCode().get(request.getLocationCode());
+            if (nameKo != null) {
+                CountryService.CountryInfo info = CountryService.COUNTRY_INFO_MAP.get(nameKo);
+                if (info != null) {
+                    diary.setLatitude(info.lat);
+                    diary.setLongitude(info.lng);
+                    log.info("Updated coordinates for {}: lat={}, lng={}", nameKo, info.lat, info.lng);
+                }
+            }
+
+            System.out.println("Diary userId: " + (diary.getUser() != null ? diary.getUser().getId() : "null"));
 
             diary = diaryRepository.save(diary);
 
@@ -190,6 +249,69 @@ public class DiaryService {
         return responseList;
     }
 
+    // userId별 카드 리스트 반환
+    public List<DiaryMergedResponse> getAllMergedEntriesByUserId(Long userId) {
+        List<Diary> diaries = diaryRepository.findByUser_Id(userId);
+        List<DiaryMergedResponse> allResponses = new ArrayList<>();
+        for (Diary diary : diaries) {
+            for (DiaryEntry entry : diary.getEntries()) {
+                StringBuilder contentBuilder = new StringBuilder();
+                for (String content : entry.getContents()) {
+                    contentBuilder.append(content).append("\n");
+                }
+
+                List<String> images = entry.getImages().stream()
+                    .map(DiaryImage::getImageUrl)
+                    .collect(Collectors.toList());
+
+                allResponses.add(DiaryMergedResponse.builder()
+                    .id(entry.getId())
+                    .locationCode(diary.getLocationCode())
+                    .mergedTitle(entry.getTitle())
+                    .mergedContent(contentBuilder.toString())
+                    .imageUrls(images)
+                    .date(entry.getDate())
+                    .build());
+            }
+        }
+        // 시간순 정렬 (예: 최신순)
+        allResponses.sort((a, b) -> b.getId().compareTo(a.getId()));
+        return allResponses;
+    }
+
+    // userId와 locationCode로 병합된 카드 리스트 반환
+    public List<DiaryMergedResponse> getMergedEntriesByUserIdAndLocationCode(Long userId, String locationCode) {
+        Optional<Diary> diaryOpt = diaryRepository.findByUser_IdAndLocationCode(userId, locationCode);
+        if (diaryOpt.isEmpty()) {
+            return List.of();
+        }
+
+        Diary diary = diaryOpt.get();
+        List<DiaryMergedResponse> responses = new ArrayList<>();
+        for (DiaryEntry entry : diary.getEntries()) {
+            StringBuilder contentBuilder = new StringBuilder();
+            for (String content : entry.getContents()) {
+                contentBuilder.append(content).append("\n");
+            }
+
+            List<String> images = entry.getImages().stream()
+                .map(DiaryImage::getImageUrl)
+                .collect(Collectors.toList());
+
+            responses.add(DiaryMergedResponse.builder()
+                .id(entry.getId())
+                .locationCode(diary.getLocationCode())
+                .mergedTitle(entry.getTitle())
+                .mergedContent(contentBuilder.toString())
+                .imageUrls(images)
+                .date(entry.getDate())
+                .build());
+        }
+        // 시간순 정렬 (예: 최신순)
+        responses.sort((a, b) -> b.getId().compareTo(a.getId()));
+        return responses;
+    }
+
     // --- 통계용 메서드 추가 ---
     @Getter
     @Builder
@@ -199,20 +321,30 @@ public class DiaryService {
         private String mostVisitedCountry;
     }
 
-    public StatsSummary getStatsSummary() {
-        // 통계 계산 로직 임시 구현 사용
-        long totalDiaries = diaryRepository.count(); // 전체 일기 수
-        long totalCountries = diaryRepository.findAll().stream().map(Diary::getLocationCode).distinct().count(); // 임시 구현
+    // userId별 통계 반환
+    public StatsSummary getStatsSummaryByUserId(Long userId) {
+        log.info("Attempting to get stats summary for userId: {}", userId);
+        List<Diary> diaries = diaryRepository.findByUser_Id(userId);
+        log.info("Found {} diaries for userId: {}", diaries.size(), userId);
+        long totalDiaries = diaries.stream().mapToLong(d -> d.getEntries().size()).sum();
+        long totalCountries = diaries.stream().map(Diary::getLocationCode).distinct().count();
 
-        // 가장 많이 방문한 나라 계산 임시 구현
-        String mostVisitedCountry = "N/A"; // 임시값
-        // 추가 구현 필요
+        Map<String, Long> countryCount = new HashMap<>();
+        for (Diary d : diaries) {
+            countryCount.put(d.getLocationCode(),
+                countryCount.getOrDefault(d.getLocationCode(), 0L) + d.getEntries().size());
+        }
+        String mostVisitedCountry = countryCount.entrySet().stream()
+            .max(Map.Entry.comparingByValue())
+            .map(Map.Entry::getKey)
+            .orElse("N/A");
+        mostVisitedCountry = CountryService.getCountryNameKoByCode().getOrDefault(mostVisitedCountry, mostVisitedCountry);
 
         return StatsSummary.builder()
-                .totalDiaries(totalDiaries)
-                .totalCountries(totalCountries)
-                .mostVisitedCountry(mostVisitedCountry)
-                .build();
+            .totalDiaries(totalDiaries)
+            .totalCountries(totalCountries)
+            .mostVisitedCountry(mostVisitedCountry)
+            .build();
     }
 
     @Getter
@@ -222,22 +354,123 @@ public class DiaryService {
         private long count;
     }
 
-    public List<StatsByCountry> getStatsByCountry() {
-        // locationCode별 일기 개수 집계 임시 구현
-        Map<String, Long> countsMap = diaryRepository.findAll().stream()
-                                       .collect(Collectors.groupingBy(Diary::getLocationCode, Collectors.counting()));
-
+    // userId별 나라별 통계 반환
+    public List<StatsByCountry> getStatsByCountryByUserId(Long userId) {
+        List<Diary> diaries = diaryRepository.findByUser_Id(userId);
+        Map<String, Long> countsMap = diaries.stream()
+            .collect(Collectors.groupingBy(Diary::getLocationCode,
+                Collectors.summingLong(d -> d.getEntries().size())));
         List<StatsByCountry> statsList = new ArrayList<>();
         for (Map.Entry<String, Long> entry : countsMap.entrySet()) {
             String locationCode = entry.getKey();
             long count = entry.getValue();
-            String countryName = CountryService.getCountryNameKoByCode().getOrDefault(locationCode, locationCode); // 국가 코드 -> 한글 이름 변환
+            String countryName = CountryService.getCountryNameKoByCode().getOrDefault(locationCode, locationCode);
             statsList.add(StatsByCountry.builder().countryName(countryName).count(count).build());
         }
-
-        // 개수 기준 내림차순 정렬
         statsList.sort((a, b) -> Long.compare(b.getCount(), a.getCount()));
-
         return statsList;
+    }
+
+    public static class PinInfo {
+        public String locationCode;
+        public String nameKo;
+        public Double lat;
+        public Double lng;
+        public PinInfo(String locationCode, String nameKo, Double lat, Double lng) {
+            this.locationCode = locationCode;
+            this.nameKo = nameKo;
+            this.lat = lat;
+            this.lng = lng;
+        }
+    }
+
+    /**
+     * 특정 userId의 핀(나라) 목록을 위도/경도/이름과 함께 최단경로 순서로 반환
+     */
+    public List<PinInfo> getConstellationPinsForUser(Long userId) {
+        List<Diary> diaries = diaryRepository.findByUser_Id(userId);
+        List<PinInfo> pins = new ArrayList<>();
+        for (Diary d : diaries) {
+            String code = d.getLocationCode();
+            String nameKo = CountryService.getCountryNameKoByCode().getOrDefault(code, code);
+            Double lat = d.getLatitude();
+            Double lng = d.getLongitude();
+            pins.add(new PinInfo(code, nameKo, lat, lng));
+        }
+        // Nearest Neighbor로 한 줄로 정렬
+        return sortPinsByNearestNeighbor(pins);
+    }
+
+    // Nearest Neighbor 정렬 (핀 개수 적을 때 충분)
+    private List<PinInfo> sortPinsByNearestNeighbor(List<PinInfo> pins) {
+        if (pins.size() <= 2) return pins;
+        List<PinInfo> result = new ArrayList<>();
+        List<PinInfo> remain = new ArrayList<>(pins);
+        result.add(remain.remove(0));
+        while (!remain.isEmpty()) {
+            PinInfo curr = result.get(result.size() - 1);
+            PinInfo next = remain.stream()
+                .min((a, b) -> Double.compare(distance(curr, a), distance(curr, b)))
+                .orElse(remain.get(0));
+            result.add(next);
+            remain.remove(next);
+        }
+        return result;
+    }
+    private double distance(PinInfo a, PinInfo b) {
+        double dx = a.lat - b.lat;
+        double dy = a.lng - b.lng;
+        return dx * dx + dy * dy;
+    }
+
+    public List<Diary> getDiariesByUserId(Long userId) {
+        return diaryRepository.findByUser_Id(userId);
+    }
+
+    // --- 추가: 이미 저장된 Diary의 위도/경도를 countries.json 기반으로 일괄 업데이트하는 메서드 ---
+    @Transactional
+    public void updateAllDiariesWithCountryLatLng() {
+        List<Diary> diaries = diaryRepository.findAll();
+        for (Diary diary : diaries) {
+            if (diary.getLatitude() == null || diary.getLatitude() == 0.0 ||
+                diary.getLongitude() == null || diary.getLongitude() == 0.0) {
+                String nameKo = CountryService.getCountryNameKoByCode().get(diary.getLocationCode());
+                CountryService.CountryInfo info = null;
+                if (nameKo != null) {
+                    info = CountryService.COUNTRY_INFO_MAP.get(nameKo);
+                }
+                if (info != null) {
+                    diary.setLatitude(info.lat);
+                    diary.setLongitude(info.lng);
+                }
+            }
+        }
+        diaryRepository.saveAll(diaries);
+    }
+
+    private DiaryMergedResponse convertToMergedResponse(Diary diary) {
+        List<DiaryMergedResponse> responses = new ArrayList<>();
+        for (DiaryEntry entry : diary.getEntries()) {
+            StringBuilder contentBuilder = new StringBuilder();
+            for (String content : entry.getContents()) {
+                contentBuilder.append(content).append("\n");
+            }
+
+            List<String> images = entry.getImages().stream()
+                .map(DiaryImage::getImageUrl)
+                .collect(Collectors.toList());
+
+            responses.add(DiaryMergedResponse.builder()
+                .id(entry.getId())
+                .locationCode(diary.getLocationCode())
+                .mergedTitle(entry.getTitle())
+                .mergedContent(contentBuilder.toString())
+                .imageUrls(images)
+                .date(entry.getDate())
+                .build());
+        }
+        // 시간순 정렬 (예: 최신순)
+        responses.sort((a, b) -> b.getId().compareTo(a.getId()));
+        return responses.isEmpty() ? null : responses.get(0);
     }
 }
