@@ -1,11 +1,16 @@
 package com.core.constella.api.diary.dto;
 
-import lombok.*;
+import java.time.LocalDate;
+import java.util.List;
+
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.LocalDate;
-import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
 @Setter
@@ -27,4 +32,6 @@ public class DiaryCreateRequest {
 
     // 경도
     private Double longitude;
+
+    private Long userId;
 }

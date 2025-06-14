@@ -1,15 +1,17 @@
 package com.core.constella.api.user.service;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.core.constella.api.user.domain.User;
 import com.core.constella.api.user.dto.LoginRequest;
 import com.core.constella.api.user.dto.LoginResponse;
 import com.core.constella.api.user.dto.RegisterRequest;
 import com.core.constella.api.user.dto.RegisterResponse;
 import com.core.constella.api.user.repository.UserRepository;
+
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -57,5 +59,11 @@ public class UserService {
     public User findByUsername(String username) {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("해당 유저가 존재하지 않습니다: " + username));
+    }
+
+    @Transactional(readOnly = true)
+    public User findById(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("해당 유저가 존재하지 않습니다: " + id));
     }
 }
