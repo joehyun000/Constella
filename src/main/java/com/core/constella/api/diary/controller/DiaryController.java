@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.core.constella.api.diary.domain.Diary;
 import com.core.constella.api.diary.dto.DiaryCreateRequest;
 import com.core.constella.api.diary.dto.DiaryMergedResponse;
 import com.core.constella.api.diary.service.DiaryService;
@@ -63,6 +64,26 @@ public class DiaryController {
     @GetMapping("/all")
     public ResponseEntity<List<DiaryMergedResponse>> getAllDiaries() {
         return ResponseEntity.ok(diaryService.getAllMergedEntries());
+    }
+
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<Diary>> getDiariesByUser(@PathVariable Long userId) {
+        return ResponseEntity.ok(diaryService.getDiariesByUserId(userId));
+    }
+
+    // userId별 병합된 카드 리스트 반환 (마이페이지용)
+    @GetMapping("/user/{userId}/merged")
+    public ResponseEntity<List<DiaryMergedResponse>> getMergedDiariesByUser(@PathVariable Long userId) {
+        return ResponseEntity.ok(diaryService.getAllMergedEntriesByUserId(userId));
+    }
+
+    // userId와 locationCode로 병합된 카드 리스트 반환 (핀 클릭용)
+    @GetMapping("/merge/{userId}/{locationCode}")
+    public ResponseEntity<List<DiaryMergedResponse>> getDiariesByUserAndCountry(
+            @PathVariable Long userId,
+            @PathVariable String locationCode) {
+        List<DiaryMergedResponse> diaries = diaryService.getMergedEntriesByUserIdAndLocationCode(userId, locationCode);
+        return ResponseEntity.ok(diaries);
     }
 
 }
